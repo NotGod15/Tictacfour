@@ -1,13 +1,10 @@
-// lib/botmove.dart
 import 'dart:math';
 import 'cell.dart';
 
-
 class BotMoveEngine {
-  // random number generator
   final Random _rng = Random();
 
-  // index for legal moves
+  // this function finds all the legal moves that can be made
   List<(int from, int to)> _legalMoves(
     List<Cell> board,
     List<int> tokens,
@@ -16,14 +13,12 @@ class BotMoveEngine {
     List<(int, int)> moves = [];
 
     if (tokens.length < maxTokens) {
-      // Place a new token in any empty cell
       for (int i = 0; i < board.length; i++) {
         if (board[i] == Cell.empty) {
           moves.add((-1, i));
         }
       }
     } else {
-      // Move the oldest token
       int from = tokens.first;
       for (int i = 0; i < board.length; i++) {
         if (board[i] == Cell.empty) {
@@ -34,7 +29,7 @@ class BotMoveEngine {
     return moves;
   }
 
-  // simulate move on simulated board
+  // for simulating a move on a copy of the board without changing the real board
   void _applyMoveSim(
     Cell symbol,
     List<Cell> simBoard,
@@ -45,11 +40,9 @@ class BotMoveEngine {
     int to = mv.$2;
 
     if (from == -1) {
-      // place new
       simBoard[to] = symbol;
       simTokens.add(to);
     } else {
-      // move
       simBoard[from] = Cell.empty;
       simBoard[to] = symbol;
       int idx = simTokens.indexOf(from);
@@ -62,19 +55,16 @@ class BotMoveEngine {
     }
   }
 
-  // check winner on simulated board
+  // checks winner on simulated board, same logic as main game
   Cell? _checkWinnerSim(List<Cell> board, int size) {
     List<List<int>> lines = [];
 
-    // Rows
     for (int r = 0; r < size; r++) {
       lines.add([r * size, r * size + 1, r * size + 2, r * size + 3]);
     }
-    // Columns
     for (int c = 0; c < size; c++) {
       lines.add([c, c + size, c + 2 * size, c + 3 * size]);
     }
-    // Diagonals win conditions
     lines.add([0, 5, 10, 15]);
     lines.add([3, 6, 9, 12]);
 
@@ -88,7 +78,8 @@ class BotMoveEngine {
     return null;
   }
 
-  // evaluate board position for bot
+  // this is for scoring the board position to see if its good for bot or player
+  // higher score means better for bot
   int _evaluateBoard(
     List<Cell> board,
     int size,
@@ -100,15 +91,12 @@ class BotMoveEngine {
 
     List<List<int>> lines = [];
 
-    // Rows 
     for (int r = 0; r < size; r++) {
       lines.add([r * size, r * size + 1, r * size + 2, r * size + 3]);
     }
-    // Columns
     for (int c = 0; c < size; c++) {
       lines.add([c, c + size, c + 2 * size, c + 3 * size]);
     }
-    // Diagonals win conditions
     lines.add([0, 5, 10, 15]);
     lines.add([3, 6, 9, 12]);
 
@@ -121,7 +109,6 @@ class BotMoveEngine {
         if (board[idx] == humanSymbol) humanCount++;
       }
 
-      // analyze current win condition
       if (botCount > 0 && humanCount > 0) continue;
 
       if (botCount > 0) {
@@ -142,7 +129,8 @@ class BotMoveEngine {
     return botScore - humanScore;
   }
 
-  // check and choose best move for bot
+  // this is the main AI function that picks the best move for bot
+  // it tries to win, blocks player from winning, and sometimes makes mistakes on purpose
   (int from, int to) chooseMove({
     required List<Cell> board,
     required List<int> botTokens,
@@ -158,7 +146,6 @@ class BotMoveEngine {
     final moves = _legalMoves(board, botTokens, maxTokens);
     if (moves.isEmpty) return (-1, -1);
 
-    // blunder frequency logic
     int blunderFreq;
     if (score <= 0) {
       blunderFreq = 2;
@@ -170,12 +157,11 @@ class BotMoveEngine {
       blunderFreq = 3;
     }
 
-    // check blunder percentage
+    // for making bot make mistakes sometimes so its not too hard
     bool shouldBlunder = (botMoves % blunderFreq == 0);
 
-    // check blunder
     if (!shouldBlunder) {
-      // check if bot can win
+      // check if bot can win in this move
       for (var mv in moves) {
         List<Cell> simBoard = List<Cell>.from(board);
         List<int> simBotTokens = List<int>.from(botTokens);
@@ -186,7 +172,7 @@ class BotMoveEngine {
         }
       }
 
-      // simulate player moves, and tag it as unsafe
+      // this part checks if a move lets player win on next turn
       List<(int, int)> safeMoves = [];
       for (var mv in moves) {
         List<Cell> afterBoard = List<Cell>.from(board);
@@ -195,7 +181,6 @@ class BotMoveEngine {
 
         _applyMoveSim(botSymbol, afterBoard, afterBotTokens, mv);
 
-        // check possible player move
         bool givesImmediateLoss = false;
         final humanMoves =
             _legalMoves(afterBoard, afterHumanTokens, maxTokens);
@@ -216,10 +201,9 @@ class BotMoveEngine {
         }
       }
 
-      // search for safe moves
       final candidates = safeMoves.isNotEmpty ? safeMoves : moves;
 
-      // choose best move by evaluating board position
+      // for finding the move with highest score
       int bestScore = -0x7fffffff;
       (int, int) bestMove = candidates.first;
 
@@ -239,7 +223,7 @@ class BotMoveEngine {
       return bestMove;
     }
 
-    //return random move (blunder) 
+    // return random move when bot should blunder
     return moves[_rng.nextInt(moves.length)];
   }
 }

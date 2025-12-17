@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// startup splash screen with logo and tap-to-start
 class StartPage extends StatefulWidget {
   const StartPage({super.key});
 
@@ -11,26 +10,22 @@ class StartPage extends StatefulWidget {
 class _StartPageState extends State<StartPage>
     with SingleTickerProviderStateMixin {
   bool _showLoginDropdown = false;
-  // track drop animation state
   bool _dropping = false;
-  // duration of drop animation
   static const _dropDuration = Duration(milliseconds: 600);
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFFEDE8D0); // background color
+    const backgroundColor = Color(0xFFEDE8D0);
 
     return Scaffold(
       backgroundColor: backgroundColor,
 
-      // Tap screen
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _onTapStart,
         child: SafeArea(
           child: Stack(
             children: [
-              // Login page will be pushed after drop
               AnimatedPositioned(
                 duration: _dropDuration,
                 curve: Curves.easeInOut,
@@ -67,7 +62,6 @@ class _StartPageState extends State<StartPage>
                 ),
               ),
 
-              // Bottom-centered text
               Positioned(
                 left: 0,
                 right: 0,
@@ -89,15 +83,12 @@ class _StartPageState extends State<StartPage>
     );
   }
 
-  // handle screen tap to start
   void _onTapStart() {
-    // prevent multiple taps
     if (_dropping) return;
     setState(() {
       _dropping = true;
     });
 
-    // After the drop animation completes, navigate to login page
     Future.delayed(_dropDuration, () {
       Navigator.of(context).pushReplacementNamed('/login');
     });

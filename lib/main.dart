@@ -6,7 +6,7 @@ import 'pages/game_home.dart';
 import 'pages/leaderboard_page.dart';
 import 'firebase_options.dart';
 
-// initialize Firebase and run app
+// this is the entry point of the app
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -15,13 +15,11 @@ Future<void> main() async {
   runApp(const TicTacFourApp());
 }
 
-// root app widget
 class TicTacFourApp extends StatelessWidget {
   const TicTacFourApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // set Material Design theme and navigation routes
     return MaterialApp(
       title: 'Tic Tac Four',
       debugShowCheckedModeBanner: false,
@@ -29,9 +27,8 @@ class TicTacFourApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      // start from StartPage
       home: const StartPage(),
-      // define app routes
+      // these are the different pages you can navigate to
       routes: {
         '/login': (_) => const LoginPage(),
         '/home': (_) => const GameHomePage(),

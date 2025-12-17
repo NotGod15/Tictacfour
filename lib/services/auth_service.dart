@@ -1,48 +1,38 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-// Create AuthService to handle all authentication work
-// Use singleton pattern so only one instance exist in whole app
 class AuthService {
   AuthService._private();
   static final AuthService instance = AuthService._private();
 
-  // Connect to Firebase Authentication and Google Sign-In
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  // Track if current user is guest or real authenticated user
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isGuest = false;
 
-  // Get current logged in user from Firebase
   User? get currentUser => _auth.currentUser;
 
-  // Handle Google sign-in process
-  
+  // for signing in with google account
   Future<bool> signInWithGoogle() async {
     try {
-      // Ask Google to show login window
       final GoogleSignInAccount? gUser = await _googleSignIn.signIn();
-      if (gUser == null) return false; // User cancel login
-      // Get authentication token from Google
+      if (gUser == null) return false;
       final GoogleSignInAuthentication gAuth = await gUser.authentication;
 
-      // Create credential for Firebase using Google token
       final credential = GoogleAuthProvider.credential(
         accessToken: gAuth.accessToken,
         idToken: gAuth.idToken,
       );
 
-      // Sign in to Firebase with Google credential
       await _auth.signInWithCredential(credential);
-      isGuest = false; // Mark user as not guest
+      isGuest = false;
       return true;
     } catch (e) {
-      // If error happen, return false to show error message
       return false;
     }
   }
 
-  // sign out from Firebase and Google
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
@@ -51,8 +41,58 @@ class AuthService {
     isGuest = false;
   }
 
-  // mark user as guest (no Firebase auth)
-  void signInGuest() {
-    isGuest = true;
+  // this allows playing without signing in (guest mode)
+  Future<bool> signInGuest() async {
+    try {
+      await _auth.signInAnonymously();
+      isGuest = true;
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
+
+  String _usernameToEmail(String username) {
+    final sanitized = username.trim();
+    return '$sanitized@tictacfour.local';
+  }
+
+  // creates new account with username and password
+  // uses fake email format because firebase auth needs email
+  Future<String?> signUpWithUsernameAndPassword({required String username, required String password}) async {
+    try {
+      final email = _usernameToEmail(username);
+      final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await cred.user?.updateDisplayName(username);
+      await _firestore.collection('usernames').doc(username).set({
+        'uid': cred.user?.uid,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      isGuest = false;
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        return 'Username is already used';
+      }
+      return e.message ?? 'Sign up failed';
+    } catch (e) {
+      return 'Sign up failed';
+    }
+  }
+
+  // for logging in with username and password
+  Future<String?> signInWithUsernameAndPassword({required String username, required String password}) async {
+    try {
+      final email = _usernameToEmail(username);
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      isGuest = false;
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? 'Login failed';
+    } catch (e) {
+      return 'Login failed';
+    }
+  }
+
 }

@@ -4,7 +4,6 @@ import '../tictacfourlogic.dart';
 import '../cell.dart';
 import '../startpage.dart';
 
-// home page with X/O selection, menu, and rules
 class GameHomePage extends StatefulWidget {
   const GameHomePage({super.key});
 
@@ -13,10 +12,8 @@ class GameHomePage extends StatefulWidget {
 }
 
 class _GameHomePageState extends State<GameHomePage> {
-  // track if menu dropdown is open
   bool _menuOpen = false;
 
-  // toggle menu open/close
   void _onMenuPressed() {
     setState(() {
       _menuOpen = !_menuOpen;
@@ -29,7 +26,7 @@ class _GameHomePageState extends State<GameHomePage> {
     });
   }
 
-  // show game rules dialog
+  // shows dialog with game rules
   void _showRules() {
     showDialog(
       context: context,
@@ -69,7 +66,10 @@ class _GameHomePageState extends State<GameHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    const backgroundColor = Color(0xFFEDE8D0);
+    
     return Scaffold(
+      backgroundColor: backgroundColor,
       body: GestureDetector(
         onVerticalDragUpdate: (d) {
           if (d.primaryDelta != null && d.primaryDelta! < -10) {
@@ -93,8 +93,16 @@ class _GameHomePageState extends State<GameHomePage> {
                         const SizedBox(width: 8),
                         const Text('Game Home', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                         const Spacer(),
-                        TextButton(
+                        ElevatedButton(
                           onPressed: _showRules,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                            shape: BeveledRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          ),
                           child: const Text('Rules'),
                         ),
                       ],
@@ -111,8 +119,15 @@ class _GameHomePageState extends State<GameHomePage> {
                             onPressed: () {
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => tictaclogic(initialSymbol: Cell.X)));
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey,
+                              foregroundColor: Colors.white,
+                              shape: BeveledRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(80),
+                            ),
                             child: const Text('Play as X\n(X goes first)', textAlign: TextAlign.center),
-                            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(80)),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -121,8 +136,15 @@ class _GameHomePageState extends State<GameHomePage> {
                             onPressed: () {
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => tictaclogic(initialSymbol: Cell.O)));
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey,
+                              foregroundColor: Colors.white,
+                              shape: BeveledRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(80),
+                            ),
                             child: const Text('Play as O\n(O goes second)', textAlign: TextAlign.center),
-                            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(80)),
                           ),
                         ),
                       ],
@@ -135,7 +157,7 @@ class _GameHomePageState extends State<GameHomePage> {
                 ),
               ),
 
-              // Dropdown menu panel
+
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 left: 0,
@@ -178,6 +200,17 @@ class _GameHomePageState extends State<GameHomePage> {
                   ),
                 ),
               ),
+              if (_menuOpen)
+                Positioned(
+                  top: 180,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _closeTopMenu,
+                  ),
+                ),
             ],
           ),
         ),

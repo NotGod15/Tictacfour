@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 
 import 'cell.dart';
 import 'botmove.dart';
+import 'startpage.dart';
 import 'services/auth_service.dart';
 import 'services/db_service.dart';
 
-// player turn enum
 enum player { human, bot }
 
-// main Tic Tac Four game logic
 class tictaclogic extends StatefulWidget {
   final Cell? initialSymbol;
   const tictaclogic({super.key, this.initialSymbol});
@@ -19,12 +18,9 @@ class tictaclogic extends StatefulWidget {
 }
 
 class _tictaclogicState extends State<tictaclogic> {
-  // board size
   static const int size = 4;
-  // max tokens per player
   static const int maxtoken = 5;
 
-  // bot AI engine
   final BotMoveEngine _botEngine = BotMoveEngine();
 
   late List<Cell> board;
@@ -32,15 +28,12 @@ class _tictaclogicState extends State<tictaclogic> {
   Cell humansymbol = Cell.X;
   Cell botsymbol = Cell.O;
 
-  // player token positions
   final List<int> humantoken = [];
   final List<int> bottoken = [];
 
-  // token texture IDs (1-5)
   int _humannexttokenid = 1;
   int _botnexttokenid = 1;
 
-  // token ID mapping by cell
   final Map<int, int> _humantokenidbycell = {};
   final Map<int, int> _bottokenidbycell = {};
 
@@ -49,15 +42,51 @@ class _tictaclogicState extends State<tictaclogic> {
   bool _symbolchosen = false;
   Cell? winner;
 
-  // game timing
   DateTime? starttime;
   Duration? elapsedtime;
 
-  // scoring - starts at 100
   int score = 100;
   int humanmoves = 0;
   int botmoves = 0;
   int totalmoves = 0;
+
+  bool _menuOpen = false;
+
+  void _onMenuPressed() {
+    setState(() {
+      _menuOpen = !_menuOpen;
+    });
+  }
+
+  void _closeTopMenu() {
+    setState(() {
+      _menuOpen = false;
+    });
+  }
+
+  void _showAbandonConfirmation(String title, String action, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text('Are you sure you want to $action? This will abandon your current game'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onConfirm();
+            },
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+  }
 
 
 
@@ -67,7 +96,6 @@ class _tictaclogicState extends State<tictaclogic> {
     _resetgame();
   }
 
-  // reset game state to initial
   void _resetgame() {
     board = List<Cell>.filled(size * size, Cell.empty);
     humantoken.clear();
@@ -86,13 +114,11 @@ class _tictaclogicState extends State<tictaclogic> {
     currentturn = player.human;
     _symbolchosen = false;
 
-    // reset token ID
     _humannexttokenid = 1;
     _botnexttokenid = 1;
     _humantokenidbycell.clear();
     _bottokenidbycell.clear();
 
-    // If an initial symbol was provided from GameHome, use it, otherwise ask
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialSymbol != null) {
         _setsymbolsthenstart(widget.initialSymbol!);
@@ -104,7 +130,6 @@ class _tictaclogicState extends State<tictaclogic> {
     setState(() {});
   }
 
-  // show symbol selection dialog
   void _showsymbolchoicedialog() {
     showDialog(
       context: context,
@@ -136,13 +161,11 @@ class _tictaclogicState extends State<tictaclogic> {
     );
   }
 
-  // set player symbol and start game
   void _setsymbolsthenstart(Cell chosen) {
     setState(() {
       humansymbol = chosen;
       botsymbol = (chosen == Cell.X) ? Cell.O : Cell.X;
 
-      // X always goes first
       currentturn = (humansymbol == Cell.X) ? player.human : player.bot;
 
       _symbolchosen = true;
@@ -154,21 +177,18 @@ class _tictaclogicState extends State<tictaclogic> {
     }
   }
 
-  // check for 4-in-row win condition
+  // this is for checking if someone won the game by getting 4 in a row
   Cell? _checkwinner() {
     List<List<int>> lines = [];
 
-    // Rows win
     for (int r = 0; r < size; r++) {
       lines.add([r * size, r * size + 1, r * size + 2, r * size + 3]);
     }
-    // Columns win
     for (int c = 0; c < size; c++) {
       lines.add([c, c + size, c + 2 * size, c + 3 * size]);
     }
-    // Diagonals win
-    lines.add([0, 5, 10, 15]); // left to right diagonal
-    lines.add([3, 6, 9, 12]); // right to left diagonal
+    lines.add([0, 5, 10, 15]);
+    lines.add([3, 6, 9, 12]);
 
     for (var line in lines) {
       Cell a = board[line[0]];
@@ -180,7 +200,7 @@ class _tictaclogicState extends State<tictaclogic> {
     return null;
   }
 
-  // end game and show result dialog
+  // for showing the end game dialog and saving score to database if player won
   void _finishGame(Cell? winnersymbol) {
     gameover = true;
     winner = winnersymbol;
@@ -234,7 +254,7 @@ class _tictaclogicState extends State<tictaclogic> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Go back to game home
+                Navigator.of(context).pop();
               },
               child: const Text('Main Menu'),
             ),
@@ -243,7 +263,6 @@ class _tictaclogicState extends State<tictaclogic> {
       },
     );
 
-    // If human won and user is not guest, store score
     if (winnersymbol == humansymbol) {
       final auth = AuthService.instance;
       if (!auth.isGuest && auth.currentUser != null) {
@@ -254,21 +273,22 @@ class _tictaclogicState extends State<tictaclogic> {
     }
   }
 
-  // apply score penalty based on move count
+  // this function reduces player score based on how many moves they made
+  // more moves = bigger penalty to make game harder
   void _applyscorepenalty() {
-    if (humanmoves <= 5) return; // no penalty for first 5 player moves
+    if (humanmoves <= 5) return;
 
     int penalty;
     if (humanmoves <= 10) {
-      penalty = 1; // moves 6-10
+      penalty = 1;
     } else if (humanmoves <= 20) {
-      penalty = 2; // moves 11-20
+      penalty = 2;
     } else if (humanmoves <= 30) {
-      penalty = 5; // moves 21-30
+      penalty = 5;
     } else if (humanmoves <= 40) {
-      penalty = 10; // moves 31-40
+      penalty = 10;
     } else {
-      penalty = 20; // moves 41+
+      penalty = 20;
     }
 
     setState(() {
@@ -276,13 +296,13 @@ class _tictaclogicState extends State<tictaclogic> {
     });
   }
 
-  // handle human player move on cell
+  // handles when player taps on a cell to place or move their token
   void _onCellTap(int index) {
     if (gameover) return;
     if (!_symbolchosen) return;
     if (currentturn != player.human) return;
 
-    // Place new token (first 5 tokens)
+    // for placing new tokens (first 5 moves)
     if (humantoken.length < maxtoken) {
       if (board[index] != Cell.empty) return;
 
@@ -290,11 +310,10 @@ class _tictaclogicState extends State<tictaclogic> {
         board[index] = humansymbol;
         humantoken.add(index);
 
-        // Assign token ID 1..5 once; then stays fixed for that token
         int id = _humannexttokenid;
         _humantokenidbycell[index] = id;
         if (_humannexttokenid < 5) {
-          _humannexttokenid++; // after 5, no new IDs
+          _humannexttokenid++;
         }
 
         humanmoves++;
@@ -302,13 +321,12 @@ class _tictaclogicState extends State<tictaclogic> {
         _applyscorepenalty();
       });
     } else {
-      // Move oldest token (cycle 1,2,3,4,5,1,2,...)
+      // this is for moving the oldest token when all 5 tokens are placed
       if (board[index] != Cell.empty) return;
 
       int fromIndex = humantoken.removeAt(0);
 
       setState(() {
-        // Carry the same token ID
         int id = _humantokenidbycell[fromIndex] ?? 1;
 
         board[fromIndex] = Cell.empty;
@@ -337,11 +355,10 @@ class _tictaclogicState extends State<tictaclogic> {
     Future.delayed(const Duration(milliseconds: 400), _botmove);
   }
 
-  // execute bot move decision
+  // for making the bot take its turn
   void _botmove() {
     if (gameover) return;
 
-    // Ask the AI engine for a move
     final mv = _botEngine.chooseMove(
       board: board,
       botTokens: bottoken,
@@ -364,11 +381,11 @@ class _tictaclogicState extends State<tictaclogic> {
     totalmoves++;
 
     setState(() {
+      // this handles bot placing or moving tokens
       int from = mv.$1;
       int to = mv.$2;
 
       if (from == -1) {
-        // Bot places new token
         board[to] = botsymbol;
         bottoken.add(to);
 
@@ -378,7 +395,6 @@ class _tictaclogicState extends State<tictaclogic> {
           _botnexttokenid++;
         }
       } else {
-        // Bot moves token
         board[from] = Cell.empty;
 
         int id = _bottokenidbycell[from] ?? 1;
@@ -411,7 +427,7 @@ class _tictaclogicState extends State<tictaclogic> {
     }
   }
 
-  // get texture asset for token
+  // gets the correct texture image for each token based on its ID
   ImageProvider _getTextureFor(Cell symbol, int boardIndex) {
     bool isHumanToken = (symbol == humansymbol);
     final map =
@@ -423,7 +439,6 @@ class _tictaclogicState extends State<tictaclogic> {
     return AssetImage("assets/textures/puck${tokenId}${suffix}.png");
   }
 
-  // build cell image widget
   Widget _buildCellImage(int index) {
     Cell cell = board[index];
     if (cell == Cell.empty) {
@@ -436,7 +451,6 @@ class _tictaclogicState extends State<tictaclogic> {
     );
   }
 
-  // build status text for current game state
   String _buildTurnText() {
     if (gameover) {
       if (winner == null) {
@@ -463,67 +477,155 @@ class _tictaclogicState extends State<tictaclogic> {
 
   @override
   Widget build(BuildContext context) {
+    const backgroundColor = Color(0xFFEDE8D0);
     final turnText = _buildTurnText();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tic Tac Four'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetgame,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 8),
-          Text(
-            turnText,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text('Score: $score'),
-          const SizedBox(height: 4),
-          Text('Your moves: $humanmoves   |   Bot moves: $botmoves'),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: GridView.builder(
-                  itemCount: size * size,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: size,
+      backgroundColor: backgroundColor,
+      body: GestureDetector(
+        onVerticalDragUpdate: (d) {
+          if (d.primaryDelta != null && d.primaryDelta! < -10) {
+            _closeTopMenu();
+          }
+        },
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: _onMenuPressed,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Tic Tac Four', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            _showAbandonConfirmation('Restart game?', 'restart', _resetgame);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () => _onCellTap(index),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black54),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          turnText,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        child: Center(
-                          child: _buildCellImage(index),
+                        const SizedBox(height: 8),
+                        Text('Score: $score'),
+                        const SizedBox(height: 4),
+                        Text('Your moves: $humanmoves   |   Bot moves: $botmoves'),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Center(
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: GridView.builder(
+                                itemCount: size * size,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: size,
+                                ),
+                                itemBuilder: (context, index) {
+                                  return GestureDetector(
+                                    onTap: () => _onCellTap(index),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.black54),
+                                      ),
+                                      child: Center(
+                                        child: _buildCellImage(index),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                        const SizedBox(height: 12),
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12.0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                left: 0,
+                top: _menuOpen ? 0 : -180,
+                right: 0,
+                child: Material(
+                  elevation: 8,
+                  color: Theme.of(context).colorScheme.surface,
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.home),
+                          title: const Text('Home'),
+                          onTap: () {
+                            _closeTopMenu();
+                            _showAbandonConfirmation('Leaving the game?', 'go home', () {
+                              Navigator.of(context).pop();
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.leaderboard),
+                          title: const Text('Leaderboard'),
+                          onTap: () {
+                            _closeTopMenu();
+                            _showAbandonConfirmation('Leaving the game?', 'view leaderboard', () {
+                              Navigator.of(context).pushNamed('/leaderboard');
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.logout),
+                          title: const Text('Log out'),
+                          onTap: () {
+                            _closeTopMenu();
+                            _showAbandonConfirmation('Leaving the game?', 'log out', () async {
+                              await AuthService.instance.signOut();
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const StartPage()),
+                                (route) => false,
+                              );
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (_menuOpen)
+                Positioned(
+                  top: 180,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _closeTopMenu,
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12.0),
-            child: Text(
-              '4 in a row wins. Each player has 5 tokens; after that, tokens move in order.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
