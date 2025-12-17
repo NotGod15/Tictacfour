@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1098759282020",
+    "project_id": "tictacfour-c6cc5",
+    "storage_bucket": "tictacfour-c6cc5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1098759282020:android:9af5126bc9d538adfaae71",
+        "android_client_info": {
+          "package_name": "com.example.tictacfour"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1098759282020-r64m1ppbd2uobtra0oo3btc6o3fv3443.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD129QHoR_so88afjMLAq4No4TX3b2dqec"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1098759282020-r64m1ppbd2uobtra0oo3btc6o3fv3443.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
