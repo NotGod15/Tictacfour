@@ -120,7 +120,7 @@ class _LoginDropdownPanel extends StatelessWidget {
       child: const Column(
         children: [
           Text(
-            'Start menu is not available yet.',
+            'Start menu is not available yet.', // archaic and unused code, back when login page not yet created
             style: TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
